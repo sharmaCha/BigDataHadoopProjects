@@ -1,3 +1,71 @@
+The POC is based on Youtube data. 
+Public DATASET available at below website 
+http://netsg.cs.sfu.ca/youtubedata/0222.zip
+Industry: Social Media
+Data: Publicly available dataset with attributes like:
+video ID
+an 11-digit string, which is unique
+uploader
+a string of the video uploader's username
+age
+an integer number of days between the date when the video was uploaded and Feb.15, 2007 (YouTube's establishment)
+category
+a string of the video category chosen by the uploader
+length
+an integer number of the video length
+views
+an integer number of the views
+rate
+a float number of the video rate
+ratings
+an integer number of the ratings
+comments
+an integer number of the comments
+related IDs
+up to 20 strings of the related video IDs
+
+Problem Statement: Problem Statement is to
+1)     Find out the top 5 categories in which the most number of videos are uploaded.
+2)     Find top 10 rated videos,
+3)     Find top 10 most viewed videos
+4)     Find top 10 rated videos in each category
+5)     Find top  10 most viewed videos in each category
+Input File Format - TAB Separated Values File (tsv file)
+
+video ID
+an 11-digit string, which is unique
+Uploader
+a string of the video uploader's username
+Age
+an integer number of days between the date when the video was uploaded and Feb.15, 2007 (YouTube's establishment)
+category
+a string of the video category chosen by the uploader
+length
+an integer number of the video length
+views
+an integer number of the views
+Rate
+a float number of the video rate
+ratings
+an integer number of the ratings
+comments
+an integer number of the comments
+related IDs
+up to 20 strings of the related video IDs
+
+Processing Logic – Youtube Data Analysis in Hadoop Eco-System.
+
+Pig Script
+1)     Find out the top 5 categories in which the most number of videos are uploaded.
+2)     Find top 10 rated videos,
+3)     Find top 10 most viewed videos
+4)     Find top 10 rated videos in each category
+5)     Find top  10 most viewed videos in each category
+
+Pig Script:
+
+Youtube_data_analysis.pig
+
 infiles = load '/hdfs/Youtube_POC/Youtube/0222/{0,1,2,3,4}.txt' using PigStorage('\t') as 
 (videoid:chararray,uploader:chararray,age:int,category:chararray,length:int,views:int,rate:int,rating:int,comments:int,related_id:chararray);
 files = FILTER infiles BY category is not null;
