@@ -1,0 +1,71 @@
+infiles = load '/hdfs/Youtube_POC/Youtube/0222/{0,1,2,3,4}.txt' using PigStorage('\t') as 
+(videoid:chararray,uploader:chararray,age:int,category:chararray,length:int,views:int,rate:int,rating:int,comments:int,related_id:chararray);
+files = FILTER infiles BY category is not null;
+grpn_for_catagories = group files by category;
+cnt_for_catagories = foreach grpn_for_catagories generate group, COUNT(files.videoid) as counting;
+sorted_for_catagories_desc = order cnt_for_catagories by counting desc;
+top5_for_catagories = limit sorted_for_catagories_desc 5;
+STORE top5_for_catagories INTO  '/hdfs/Youtube_POC/Top5Catagories' using PigStorage(',');
+order_rated_video = order files by rating desc;
+top10_rated_video = limit order_rated_video 10;
+final_top10_rated_video = foreach top10_rated_video generate $0,$3,$7;
+STORE final_top10_rated_video INTO '/hdfs/Youtube_POC/Top10Rated' using PigStorage(',');
+order_viewed_video = order files by views desc;
+top10_viewed_video = limit order_viewed_video 10;
+final_top10_viewed_video = foreach top10_viewed_video generate $0,$3,$5;
+STORE final_top10_viewed_video INTO '/hdfs/Youtube_POC/Top10Viewed' using PigStorage(',');
+top10_rated_catagories = foreach grpn_for_catagories{
+                           sorted = order files by rating desc;
+                           top10 = limit sorted 10;
+                           generate flatten(top10);
+};
+top10_rated_by_catagories = foreach top10_rated_catagories generate $0,$3,$7;
+STORE top10_rated_by_catagories INTO '/hdfs/Youtube_POC/Top10RatedByCatagories' using PigStorage(',');
+top10_viewed_catagories = foreach grpn_for_catagories{
+                           sorted = order files by views desc;
+                           top10 = limit sorted 10;
+                           generate flatten(top10);
+};
+top10_viewed_by_catagories = foreach top10_viewed_catagories generate $0,$3,$5;
+STORE top10_viewed_by_catagories INTO '/hdfs/Youtube_POC/Top10ViewedByCatagories' using PigStorage(',');
+
+Shell Script
+
+Purpose of this shell script is to perform clean-up (delete existing output files) and execute the Pig Script and Hive Commands to store the resultant in Hive Tables and Store result in file (CSV format).
+ 
+SHELL CODE
+
+Youtube_data_analysis.sh
+ 
+sudo rm -rf /var/lib/hive/metastore/metastore_db/*.lck
+rm /home/Downloads/POC/YoutubePOC/Top5Catagories.csv
+rm /home/Downloads/POC/YoutubePOC/Top10Rated.csv
+rm /home/Downloads/POC/YoutubePOC/Top10RatedByCatagories.csv
+rm /home/Downloads/POC/YoutubePOC/Top10Viewed.csv
+rm /home/Downloads/POC/YoutubePOC/Top10ViewedByCatagories.csv
+hadoop fs -rmr /hdfs/Youtube_POC/Top5Catagories
+hadoop fs -rmr /hdfs/Youtube_POC/Top10Rated
+hadoop fs -rmr /hdfs/Youtube_POC/Top10RatedByCatagories
+hadoop fs -rmr /hdfs/Youtube_POC/Top10Viewed
+hadoop fs -rmr /hdfs/Youtube_POC/Top10ViewedByCatagories
+pig /home/Youtube_POC/Youtube/0222/Youtube_data_analysis.pig
+hadoop fs -get /hdfs/Youtube_POC/Top5Catagories/part-r-00000               /home/Downloads/POC/YoutubePOC/Top5Catagories.csv
+hadoop fs -get /hdfs/Youtube_POC/Top10Rated/part-r-00000                   /home/Downloads/POC/YoutubePOC/Top10Rated.csv
+hadoop fs -get /hdfs/Youtube_POC/Top10RatedByCatagories/part-r-00000       /home/Downloads/POC/YoutubePOC/Top10RatedByCatagories.csv
+hadoop fs -get /hdfs/Youtube_POC/Top10Viewed/part-r-00000                  /home/Downloads/POC/YoutubePOC/Top10Viewed.csv
+hadoop fs -get /hdfs/Youtube_POC/Top10ViewedByCatagories/part-r-00000      /home/Downloads/POC/YoutubePOC/Top10ViewedByCatagories.csv
+hive -e 'drop table if exists Top5CatagoriesTable';
+hive -e 'drop table if exists Top10RatedTable';
+hive -e 'drop table if exists Top10RatedByCatagoriesTable';
+hive -e 'drop table if exists Top10ViewedTable';
+hive -e 'drop table if exists Top10ViewedByCatagoriesTable';
+hive -e "create external table Top5CatagoriesTable(Top5Catagory string, VideoCount int) row format delimited fields terminated by',' lines terminated by '\n' stored as textfile location '/hdfs/Youtube_POC/hive/Top5Catagories'";
+hive -e "create external table Top10RatedTable(Videoid string,Catagory string,Rating int) row format delimited fields terminated by',' lines terminated by '\n' stored as textfile location '/hdfs/Youtube_POC/hive/Top10RatedTable'";
+hive -e "create external table Top10RatedByCatagoriesTable(Videoid string,Catagory string,Rating int) row format delimited fields terminated by',' lines terminated by '\n' stored as textfile location '/hdfs/Youtube_POC/hive/Top10RatedByCatagoriesTable'";
+hive -e "create external table Top10ViewedTable(Videoid string,Catagory string,Viewed_count int) row format delimited fields terminated by',' lines terminated by '\n' stored as textfile location '/hdfs/Youtube_POC/hive/Top10ViewedTable'";
+hive -e "create external table Top10ViewedByCatagoriesTable(Videoid string,Catagory string,Viewed_count int) row format delimited fields terminated by',' lines terminated by '\n' stored as textfile location '/hdfs/Youtube_POC/hive/Top10ViewedByCatagoriesTable'";
+hive -e "load data inpath '/hdfs/Youtube_POC/Top5Catagories/part-r-00000' overwrite into table Top5CatagoriesTable";
+hive -e "load data inpath '/hdfs/Youtube_POC/Top10Rated/part-r-00000' overwrite into table Top10RatedTable";
+hive -e "load data inpath '/hdfs/Youtube_POC/Top10RatedByCatagories/part-r-00000' overwrite into table Top10RatedByCatagoriesTable";
+hive -e "load data inpath '/hdfs/Youtube_POC/Top10Viewed/part-r-00000' overwrite into table Top10ViewedTable";
+hive -e "load data inpath '/hdfs/Youtube_POC/Top10ViewedByCatagories/part-r-00000' overwrite into table Top10ViewedByCatagoriesTable";
